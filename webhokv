@@ -1,94 +1,76 @@
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-local MainFrame = Instance.new("Frame", ScreenGui)
-local Header = Instance.new("Frame", MainFrame)
-local ToggleBtn = Instance.new("TextButton", MainFrame)
-local CloseBtn = Instance.new("TextButton", Header) 
-local MinBtn = Instance.new("TextButton", Header)   
-local OpenBtn = Instance.new("ImageButton", ScreenGui) 
-
--- CONFIG & DATABASE (Sesuai Webhook Kamu)
+-- [[ CONFIG ]] --
 local webhook_url = "https://discord.com/api/webhooks/1471473387120361573/OJN4BmXmdHbf89_fJ6oV-QRp7j0XVeQVR4mxYR_aIIZTwmaoHYxU9oYqsGK8OQRecxY4"
-local active = false
 local startTime = os.time()
 local count = {ruby = 0, evo = 0, mythic = 0, secret = 0}
 
 local list_ruby = {"Gemstone Ruby"}
 local list_evo = {"Evolved Enchant Stone"}
 local list_mythic = {
-    "Bioluminescent Manta Ray", "Abyr Squid", "Armor Catfish", "Blob Fish", "Sea Crustacean", 
-    "Runic Sea Crustacean", "Ancient Squid", "Runic Squid", "Cavern Dweller", "Primordial Octopus", 
-    "Flatheaded Whale Shark", "Heart Dolphin", "Rose Swordfish", "Rose Bouquet", "Choco Shark"
+    "Bioluminescent Manta Ray", "Abyr Squid", "Armor Catfish", "Blob Fish", "Sea Crustacean", "Runic Sea Crustacean", "Ancient Squid", "Runic Squid", "Cavern Dweller", "Primordial Octopus", "Flatheaded Whale Shark", "Heart Dolphin", "Rose Swordfish", "Rose Bouquet", "Choco Shark",
+    "Dotted Stingray", "Loggerhead Turtle", "Prismy Seahorse", "Starlight Manta Ray", "Blueflame Ray", "Magma Shark", "Magma Sunfish", "Blue Flame Ray", "Luminous Fish", "Abyss Seahorse", "Thresher Shark", "Strippled Seahorse", "Fossilized Shark", "Crocodile", "Runebound Crocodile", "Runic Abyssal Shark", "Solarflare Koi", "Komodo Dragon", "Pirate Sailfish"
 }
 local list_secret = {
-    "Cursed Kraken", "Elpirate Gran Maja", "Queen Crab", "King Crab", "Gladiator Shark", 
-    "Ancient Lochness Monster", "Elshark Gran Maja", "Broken Heart Nessie", "Love Nessie"
+    "Cursed Kraken", "Elpirate Gran Maja", "Queen Crab", "King Crab", "Gladiator Shark", "Ancient Lochness Monster", "Elshark Gran Maja", "Broken Heart Nessie", "Love Nessie",
+    "Orca", "Crystal Crab", "Lochness Monster", "Lava Well", "Ancient Magmaware", "Eerie Shark", "Monster Shark", "Tin Armor Shark", "Scare", "Great Whale", "Frostborn Shark", "Robot Kraken", "Giant Squid", "Cryoshade Glider", "Frost Born Shark", "King Jelly", "Talon Serpent", "Mosasaur Shark", "Rainbow Comet Shark", "Pirate Megalodon", "Maze Treasure", "Thin Armor Shark", "Worm Fish", "Megalodon", "Blob Shark", "Ancient Lochness", "Zombie Shark", "Zombie Megalodon", "Dead Zombie Shark", "Ghost Shark", "Skeleton Narwhal", "Ghost Worm Fish", "1x1x1x1 Comet Shark", "Bloodmoon Whale", "Armored Shark", "Panther Eel", "Depthseeker Ray", "Bone Whale", "Ancient Whale", "Hacker Shark", "ElRetro Gran Maja", "Strawberry Choc Megalodon", "Krampus Shark", "Emerald Winter Whale", "Winter Frost Shark", "Icebreaker Whale"
 }
 
--- UI SETUP (Rakitan Sempurna Kita)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15); MainFrame.BackgroundTransparency = 0.4
-MainFrame.Position = UDim2.new(0.4, 0, 0.4, 0); MainFrame.Size = UDim2.new(0, 180, 0, 90)
-MainFrame.Active = true; MainFrame.Draggable = true; Instance.new("UICorner", MainFrame)
+-- [[ FUNGSI KIRIM WEBHOOK ]] --
+local function sendWebhook(fishName, fullText, category, isStart)
+    local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+    if not req then return end
 
-Header.Size = UDim2.new(1, 0, 0, 30); Header.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Header.BackgroundTransparency = 0; Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 8)
-Header.Parent = MainFrame
+    local content, description, color
+    
+    if isStart then
+        content = "✅ **Webhook Fishit Aktif!**"
+        description = "Script running di akun: **" .. game.Players.LocalPlayer.Name .. "**\nMenunggu kabar dari server..."
+        color = 65535 
+    else
+        count[category] = count[category] + 1
+        local s = os.time() - startTime
+        local runtime = string.format("%02d:%02d:%02d", math.floor(s/3600), math.floor((s%3600)/60), s%60)
+        
+        -- LOGIKA AMBIL NAMA PLAYER DARI CHAT SERVER
+        local cleanerText = fullText:gsub("<[^>]*>", "") 
+        local luckyPlayer = cleanerText:match("%[Server%]%: (.-) obtained") or "Unknown Player"
+        
+        -- PENENTUAN KATEGORI UNTUK PESAN DISCORD (Mythic/Secret/Stone)
+        local displayCategory = "Mythic"
+        if category == "secret" then displayCategory = "Secret" end
+        if category == "ruby" or category == "evo" then displayCategory = "Stone" end
+        
+        content = "Congratulations!! **" .. luckyPlayer .. "** You have obtained a new **" .. displayCategory .. "** fish!"
+        description = "Berhasil Menangkap: **" .. cleanerText .. "**\n\n**Script Runtime:** " .. runtime .. "\n| Ruby: " .. count.ruby .. " |  Evo: " .. count.evo .. " |  Mythic: " .. count.mythic .. " |  Secret: " .. count.secret
+        color = (category == "secret" and 65280) or 16711680
+    end
 
-CloseBtn.Text = "×"; CloseBtn.Position = UDim2.new(0.82, 0, 0, 0); CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.BackgroundTransparency = 1; CloseBtn.TextColor3 = Color3.fromRGB(255, 50, 50); CloseBtn.TextSize = 25
-
-MinBtn.Text = "−"; MinBtn.Position = UDim2.new(0.65, 0, 0, 0); MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.BackgroundTransparency = 1; MinBtn.TextColor3 = Color3.new(1, 1, 1); MinBtn.TextSize = 25
-
--- TOMBOL WEBHOOK (Ukuran & Posisi Request-an Bosku)
-ToggleBtn.Size = UDim2.new(0, 140, 0, 38); ToggleBtn.Position = UDim2.new(0.5, -70, 0.45, 0) 
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 0, 0); ToggleBtn.Text = "WEBHOOK: OFF"
-ToggleBtn.TextColor3 = Color3.new(1, 1, 1); ToggleBtn.Font = Enum.Font.GothamBold; ToggleBtn.TextSize = 18
-Instance.new("UICorner", ToggleBtn).Parent = ToggleBtn
-
--- ICON MELAYANG (Sesuai Script Icon Kamu)
-OpenBtn.Size = UDim2.new(0, 45, 0, 45); OpenBtn.Position = UDim2.new(0.05, 0, 0.3, 0)
-OpenBtn.Visible = false; OpenBtn.Image = "rbxassetid://6031068433"; OpenBtn.BackgroundTransparency = 0.3
-OpenBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30); OpenBtn.Draggable = true
-Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0)
-
--- FUNGSI RUNTIME & KIRIM DATA
-local function getRuntime()
-    local s = os.time() - startTime
-    return string.format("%02d:%02d:%02d", math.floor(s/3600), math.floor((s%3600)/60), s%60)
+    req({
+        Url = webhook_url,
+        Method = "POST",
+        Headers = {["Content-Type"] = "application/json"},
+        Body = game:GetService("HttpService"):JSONEncode({
+            ["content"] = content,
+            ["embeds"] = {{
+                ["description"] = description,
+                ["color"] = color,
+                ["footer"] = {["text"] = "Server Mybubub • " .. os.date("%X")}
+            }}
+        })
+    })
 end
 
-local function sendWebhook(fishName, fullText, category)
-    count[category] = count[category] + 1
-    local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
-    if req then
-        req({
-            Url = webhook_url,
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = game:GetService("HttpService"):JSONEncode({
-                ["content"] = "Congratulations!! **" .. game.Players.LocalPlayer.Name .. "** You have obtained a new **" .. fishName .. "** fish!",
-                ["embeds"] = {{
-                    ["description"] = "Berhasil Menangkap: **" .. fullText:gsub("<[^>]*>", "") .. "**\n\n**Script Runtime:** " .. getRuntime() .. "\n💎 Ruby: " .. count.ruby .. " | 🪨 Evo: " .. count.evo .. " | 🔴 Mythic: " .. count.mythic .. " | 🟢 Secret: " .. count.secret,
-                    ["color"] = (category == "secret" and 65280) or 16711680,
-                    ["footer"] = {["text"] = "Server Mybubub • " .. os.date("%X")}
-                }}
-            })
-        })
+-- [[ STARTUP ]] --
+sendWebhook(nil, nil, nil, true)
+
+-- [[ DETEKSI CHAT (INSANE SPEED) ]] --
+game:GetService("TextChatService").OnIncomingMessage = function(message)
+    local txt = message.Text:lower()
+    
+    -- Hanya proses pesan yang mengandung "[Server]:" dan "obtained"
+    if txt:find("%[server%]:") and txt:find("obtained") then
+        for _, n in pairs(list_ruby) do if txt:find(n:lower()) then sendWebhook(n, message.Text, "ruby", false) return end end
+        for _, n in pairs(list_evo) do if txt:find(n:lower()) then sendWebhook(n, message.Text, "evo", false) return end end
+        for _, n in pairs(list_mythic) do if txt:find(n:lower()) then sendWebhook(n, message.Text, "mythic", false) return end end
+        for _, n in pairs(list_secret) do if txt:find(n:lower()) then sendWebhook(n, message.Text, "secret", false) return end end
     end
 end
-
--- DETEKSI CHAT (INSANE SPEED)
-game:GetService("TextChatService").OnIncomingMessage = function(message)
-    if not active then return end
-    local txt = message.Text
-    local low = txt:lower()
-    
-    for _, n in pairs(list_ruby) do if low:find(n:lower()) then sendWebhook(n, txt, "ruby") return end end
-    for _, n in pairs(list_evo) do if low:find(n:lower()) then sendWebhook(n, txt, "evo") return end end
-    for _, n in pairs(list_mythic) do if low:find(n:lower()) then sendWebhook(n, txt, "mythic") return end end
-    for _, n in pairs(list_secret) do if low:find(n:lower()) then sendWebhook(n, txt, "secret") return end end
-end
-
--- UI LOGIC
-ToggleBtn.MouseButton1Click:Connect(function()
-    
